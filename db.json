@@ -1,0 +1,54 @@
+{
+  "comments": [
+    {
+      "id": "1",
+      "name": "Alice",
+      "comment": "This is a comment from Alice.",
+      "isBookmarked": true
+    },
+    {
+      "id": "2",
+      "name": "Bob",
+      "comment": "This is a comment from Bob.",
+      "isBookmarked": false
+    },
+    {
+      "id": "3",
+      "name": "Charlie",
+      "comment": "This is a comment from Charlie.",
+      "isBookmarked": true
+    },
+    {
+      "id": "4",
+      "name": "David",
+      "comment": "This is a comment from David.",
+      "isBookmarked": false
+    },
+    {
+      "id": "5",
+      "name": "Eve",
+      "comment": "This is a comment from Eve.",
+      "isBookmarked": true
+    }
+  ],
+  "comments2": [
+    {
+      "id": "1",
+      "name": "Alice",
+      "comment": "This is a comment from Alice.",
+      "isBookmarked": true
+    },
+    {
+      "id": "4",
+      "name": "David",
+      "comment": "This is a comment from David.",
+      "isBookmarked": false
+    },
+    {
+      "id": "5",
+      "name": "Eve",
+      "comment": "This is a comment from Eve.",
+      "isBookmarked": true
+    }
+  ]
+}
