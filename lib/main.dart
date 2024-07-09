@@ -41,6 +41,7 @@ class BookmarkButton extends ConsumerWidget {
         ref
             .read(allPostsProvider.notifier)
             .updatePost(post.copyWith(isBookmarked: newBookmarkStatus));
+
         try {
           await toggleBookmark(ref, userId, post.id, post.isBookmarked);
         } catch (e) {
@@ -59,9 +60,9 @@ class PostFeedScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pagedPostsAsync = ref.watch(pagedPostsProvider);
+    final pagedPostsAsync = ref.watch(hogeProvider);
     final scrollController = useScrollController();
-    final _ = ref.watch(allPostsProvider);
+    // final _ = ref.watch(allPostsProvider);
 
     Future<void> refresh() async {
       ref.read(pagedPostsProvider.notifier).reset();
@@ -118,12 +119,10 @@ class PostFeedScreen extends HookConsumerWidget {
               controller: scrollController,
               itemCount: postIds.length,
               itemBuilder: (context, index) {
-                final post = ref
-                    .read(allPostsProvider.notifier)
-                    .getPostById(postIds[index]);
-                if (post == null) {
-                  return Container();
-                }
+                // final post = ref
+                //     .read(allPostsProvider.notifier)
+                //     .getPostById(postIds[index]);
+                final post = postIds[index];
                 return ListTile(
                   title: Text(post.name),
                   subtitle: Text(post.comment),
@@ -209,7 +208,7 @@ class BookmarkListScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookmarks = ref.watch(bookmarksMasterProvider);
-    final _ = ref.watch(allPostsProvider);
+//    final _ = ref.watch(allPostsProvider);
 
     Future<void> refresh() async {
       ref.invalidate(bookmarksMasterProvider);
@@ -229,10 +228,10 @@ class BookmarkListScreen extends HookConsumerWidget {
                 final post = ref
                     .read(allPostsProvider.notifier)
                     .getPostById(posts[index]);
+                // final post = posts[index];
                 if (post == null) {
                   return Container();
                 }
-                // final post = posts[index];
                 return ListTile(
                   title: Text(post.name),
                   subtitle: Text(post.comment),

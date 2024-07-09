@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -51,16 +53,41 @@ class AllPostsNotifier extends StateNotifier<List<Post>> {
   }
 }
 
-// final hogeProvider = FutureProvider.autoDispose<List<Post>>(
-//   (ref) async {
-//     final postIds = await ref.watch(postsProvider.future);
+class HogeNotifier extends AutoDisposeAsyncNotifier<List<Post>> {
+  @override
+  FutureOr<List<Post>> build() async {
+    final postIds = ref.watch(pagedPostsProvider);
+    final _ = ref.watch(allPostsProvider);
 
-//     return postIds
-//         .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
-//         .nonNulls
-//         .toList();
-//   },
+    return postIds.when(
+      data: (data) {
+        final posts = data
+            .map((p) => ref.read(allPostsProvider.notifier).getPostById(p))
+            .nonNulls
+            .toList();
+        return posts;
+      },
+      error: (err, stack) => throw err,
+      loading: () => throw Exception("Loading"),
+    );
+  }
+
+  Future<void> fetchNextPage() async {
+    return ref.read(pagedPostsProvider.notifier).fetchNextPage();
+  }
+
+  Future<void> reset() async {
+    return ref.read(pagedPostsProvider.notifier).reset();
+  }
+}
+
+// final hogeProvider =
+//     AsyncNotifierProvider.autoDispose<HogeNotifier, List<Post>>(
+//   () => HogeNotifier.new,
 // );
+
+final hogeProvider = AutoDisposeAsyncNotifierProvider<HogeNotifier, List<Post>>(
+    HogeNotifier.new);
 
 class PagedPostsNotifier extends AsyncNotifier<List<int>> {
   int currentPage = 1; // 現在のページを保持する
