@@ -1,8 +1,8 @@
-// main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sns_comment_sync_problem/post.dart';
 
-import 'comment_service.dart';
+import 'all_posts_notifier.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -13,170 +13,132 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: MainPage(),
+    return MaterialApp(
+      title: 'Simple SNS',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const PostFeedScreen(),
     );
   }
 }
 
-class MainPage extends StatelessWidget {
-  const MainPage({super.key});
+class BookmarkButton extends ConsumerWidget {
+  final Post post;
+
+  const BookmarkButton({super.key, required this.post});
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Comments'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Comments'),
-              Tab(text: 'Comments2'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return IconButton(
+      icon: Icon(post.isBookmarked ? Icons.bookmark : Icons.bookmark_border),
+      onPressed: () async {
+        final userId = ref.read(loginIdProvider);
+        final newBookmarkStatus = !post.isBookmarked;
+
+        // 楽観的な更新
+        ref
+            .read(allPostsProvider.notifier)
+            .updatePost(post.copyWith(isBookmarked: newBookmarkStatus));
+        try {
+          await toggleBookmark(ref, userId, post.id, post.isBookmarked);
+        } catch (e) {
+          // エラーが発生した場合、元の状態に戻す
+          ref
+              .read(allPostsProvider.notifier)
+              .updatePost(post.copyWith(isBookmarked: !newBookmarkStatus));
+        }
+      },
+    );
+  }
+}
+
+class PostFeedScreen extends HookConsumerWidget {
+  const PostFeedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final posts = ref.watch(hogeProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Post Feed'),
+        actions: [
+          PopupMenuButton<int>(
+            child: Text("Login as: ${ref.watch(loginIdProvider)}"),
+            onSelected: (id) {
+              ref.read(loginIdProvider.notifier).state = id;
+              ref.invalidate(postsProvider);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 1, child: Text('Login as User 1')),
+              const PopupMenuItem(value: 2, child: Text('Login as User 2')),
             ],
           ),
-        ),
-        body: const TabBarView(
-          children: [
-            CommentListPage(),
-            CommentList2Page(),
-          ],
-        ),
+        ],
       ),
-    );
-  }
-}
-
-class CommentListPage extends ConsumerWidget {
-  const CommentListPage({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final commentIdsAsyncValue = ref.watch(commentsProvider);
-
-    return commentIdsAsyncValue.when(
-      data: (commentIds) {
-        return ListView.builder(
-          itemCount: commentIds.length,
-          itemBuilder: (context, index) {
-            final comment = ref
-                .watch(allCommentsProvider)
-                .firstWhere((comment) => comment.id == commentIds[index]);
-            return ListTile(
-              title: Text(comment.name),
-              subtitle: Text(comment.comment),
-              trailing: IconButton(
-                icon: Icon(
-                  comment.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                ),
-                onPressed: () {
-                  final updatedComment =
-                      comment.copyWith(isBookmarked: !comment.isBookmarked);
-                  ref
-                      .read(allCommentsProvider.notifier)
-                      .updateComment(updatedComment);
+      body: posts.when(
+        data: (posts) {
+          return ListView.builder(
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              final post = posts[index];
+              return ListTile(
+                title: Text(post.name),
+                subtitle: Text(post.comment),
+                trailing: BookmarkButton(post: post),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PostDetailScreen(postId: post.id),
+                    ),
+                  );
                 },
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CommentDetailPage(comment.id),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
-    );
-  }
-}
-
-class CommentList2Page extends ConsumerWidget {
-  const CommentList2Page({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final commentIdsAsyncValue = ref.watch(comments2Provider);
-
-    return commentIdsAsyncValue.when(
-      data: (commentIds) => ListView.builder(
-        itemCount: commentIds.length,
-        itemBuilder: (context, index) {
-          final comment = ref
-              .watch(allCommentsProvider)
-              .firstWhere((comment) => comment.id == commentIds[index]);
-          return ListTile(
-            title: Text(comment.name),
-            subtitle: Text(comment.comment),
-            trailing: IconButton(
-              icon: Icon(
-                comment.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              ),
-              onPressed: () {
-                final updatedComment =
-                    comment.copyWith(isBookmarked: !comment.isBookmarked);
-                ref
-                    .read(allCommentsProvider.notifier)
-                    .updateComment(updatedComment);
-              },
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CommentDetailPage(comment.id),
-                ),
               );
             },
           );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
     );
   }
 }
 
-class CommentDetailPage extends ConsumerWidget {
-  final String commentId;
+class PostDetailScreen extends ConsumerWidget {
+  final int postId;
 
-  const CommentDetailPage(this.commentId, {super.key});
+  const PostDetailScreen({super.key, required this.postId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final comment = ref
-        .watch(allCommentsProvider)
-        .firstWhere((comment) => comment.id == commentId);
+    final postDetail = ref.watch(hoge2Provider(postId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Comment Detail')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(comment.name, style: const TextStyle(fontSize: 24)),
-            const SizedBox(height: 16),
-            Text(comment.comment),
-            const SizedBox(height: 16),
-            IconButton(
-              icon: Icon(
-                comment.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              ),
-              onPressed: () {
-                final updatedComment =
-                    comment.copyWith(isBookmarked: !comment.isBookmarked);
-                ref
-                    .read(allCommentsProvider.notifier)
-                    .updateComment(updatedComment);
-              },
-            ),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text('Post Detail'),
+      ),
+      body: postDetail.when(
+        data: (post) {
+          return post == null
+              ? const Center(child: Text('Post not found'))
+              : Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(post.name, style: const TextStyle(fontSize: 24)),
+                      const SizedBox(height: 16),
+                      Text(post.comment, style: const TextStyle(fontSize: 16)),
+                      const SizedBox(height: 16),
+                      BookmarkButton(post: post),
+                    ],
+                  ),
+                );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
       ),
     );
   }

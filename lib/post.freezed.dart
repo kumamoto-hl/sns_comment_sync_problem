@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'comment_model.dart';
+part of 'post.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -14,34 +14,34 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
-Comment _$CommentFromJson(Map<String, dynamic> json) {
+Post _$PostFromJson(Map<String, dynamic> json) {
   return _Comment.fromJson(json);
 }
 
 /// @nodoc
-mixin _$Comment {
-  String get id => throw _privateConstructorUsedError;
+mixin _$Post {
+  int get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get comment => throw _privateConstructorUsedError;
   bool get isBookmarked => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
-  $CommentCopyWith<Comment> get copyWith => throw _privateConstructorUsedError;
+  $PostCopyWith<Post> get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $CommentCopyWith<$Res> {
-  factory $CommentCopyWith(Comment value, $Res Function(Comment) then) =
-      _$CommentCopyWithImpl<$Res, Comment>;
+abstract class $PostCopyWith<$Res> {
+  factory $PostCopyWith(Post value, $Res Function(Post) then) =
+      _$PostCopyWithImpl<$Res, Post>;
   @useResult
-  $Res call({String id, String name, String comment, bool isBookmarked});
+  $Res call({int id, String name, String comment, bool isBookmarked});
 }
 
 /// @nodoc
-class _$CommentCopyWithImpl<$Res, $Val extends Comment>
-    implements $CommentCopyWith<$Res> {
-  _$CommentCopyWithImpl(this._value, this._then);
+class _$PostCopyWithImpl<$Res, $Val extends Post>
+    implements $PostCopyWith<$Res> {
+  _$PostCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
@@ -60,7 +60,7 @@ class _$CommentCopyWithImpl<$Res, $Val extends Comment>
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
-              as String,
+              as int,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -78,18 +78,18 @@ class _$CommentCopyWithImpl<$Res, $Val extends Comment>
 }
 
 /// @nodoc
-abstract class _$$CommentImplCopyWith<$Res> implements $CommentCopyWith<$Res> {
+abstract class _$$CommentImplCopyWith<$Res> implements $PostCopyWith<$Res> {
   factory _$$CommentImplCopyWith(
           _$CommentImpl value, $Res Function(_$CommentImpl) then) =
       __$$CommentImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String id, String name, String comment, bool isBookmarked});
+  $Res call({int id, String name, String comment, bool isBookmarked});
 }
 
 /// @nodoc
 class __$$CommentImplCopyWithImpl<$Res>
-    extends _$CommentCopyWithImpl<$Res, _$CommentImpl>
+    extends _$PostCopyWithImpl<$Res, _$CommentImpl>
     implements _$$CommentImplCopyWith<$Res> {
   __$$CommentImplCopyWithImpl(
       _$CommentImpl _value, $Res Function(_$CommentImpl) _then)
@@ -107,7 +107,7 @@ class __$$CommentImplCopyWithImpl<$Res>
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
-              as String,
+              as int,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -137,7 +137,7 @@ class _$CommentImpl implements _Comment {
       _$$CommentImplFromJson(json);
 
   @override
-  final String id;
+  final int id;
   @override
   final String name;
   @override
@@ -147,7 +147,7 @@ class _$CommentImpl implements _Comment {
 
   @override
   String toString() {
-    return 'Comment(id: $id, name: $name, comment: $comment, isBookmarked: $isBookmarked)';
+    return 'Post(id: $id, name: $name, comment: $comment, isBookmarked: $isBookmarked)';
   }
 
   @override
@@ -180,9 +180,9 @@ class _$CommentImpl implements _Comment {
   }
 }
 
-abstract class _Comment implements Comment {
+abstract class _Comment implements Post {
   const factory _Comment(
-      {required final String id,
+      {required final int id,
       required final String name,
       required final String comment,
       required final bool isBookmarked}) = _$CommentImpl;
@@ -190,7 +190,7 @@ abstract class _Comment implements Comment {
   factory _Comment.fromJson(Map<String, dynamic> json) = _$CommentImpl.fromJson;
 
   @override
-  String get id;
+  int get id;
   @override
   String get name;
   @override
