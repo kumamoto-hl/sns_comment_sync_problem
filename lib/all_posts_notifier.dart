@@ -38,6 +38,10 @@ class AllPostsNotifier extends StateNotifier<List<Post>> {
     ];
   }
 
+  void removePost(int postId) {
+    state = state.where((post) => post.id != postId).toList();
+  }
+
   Post? getPostById(int id) {
     try {
       return state.firstWhere((post) => post.id == id);
@@ -47,14 +51,16 @@ class AllPostsNotifier extends StateNotifier<List<Post>> {
   }
 }
 
-final hogeProvider = FutureProvider.autoDispose<List<Post>>((ref) async {
-  final postIds = await ref.watch(postsProvider.future);
+final hogeProvider = FutureProvider.autoDispose<List<Post>>(
+  (ref) async {
+    final postIds = await ref.watch(postsProvider.future);
 
-  return postIds
-      .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
-      .nonNulls
-      .toList();
-},);
+    return postIds
+        .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
+        .nonNulls
+        .toList();
+  },
+);
 
 final postsProvider = FutureProvider.autoDispose<List<int>>((ref) async {
 //  final allPosts = ref.watch(allPostsProvider.notifier);

@@ -143,6 +143,23 @@ class PostDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Post Detail'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () async {
+              final dio = ref.read(dioProvider);
+              try {
+                await dio.delete('/posts/$postId');
+                ref.read(allPostsProvider.notifier).removePost(postId);
+                Navigator.pop(context);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: postDetail.when(
         data: (post) {
