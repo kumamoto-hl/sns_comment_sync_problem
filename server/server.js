@@ -38,8 +38,9 @@ db.serialize(() => {
     // サンプルデータの挿入
     db.run(`INSERT INTO users (name) VALUES ('Alice')`);
     db.run(`INSERT INTO users (name) VALUES ('Bob')`);
-    db.run(`INSERT INTO posts (userId, comment) VALUES (1, 'Hello World')`);
-    db.run(`INSERT INTO posts (userId, comment) VALUES (2, 'Hi there!')`);
+    for (let i = 0; i < 100; i++) {
+        db.run(`INSERT INTO posts (userId, comment) VALUES (1, 'Post ${i + 1}')`);
+    }
 });
 
 // 記事のフィード取得
@@ -174,6 +175,18 @@ app.get('/posts/user/:userId', (req, res) => {
             return;
         }
         res.json({posts: rows});
+    });
+});
+
+// 記事削除
+app.delete('/posts/:postId', (req, res) => {
+    const postId = req.params.postId;
+    db.run(`DELETE FROM posts WHERE id = ?`, [postId], function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ message: 'Post deleted' });
     });
 });
 
