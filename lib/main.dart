@@ -167,7 +167,8 @@ class BookmarkListScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookmarks = ref.watch(bookmarksProvider);
+    final bookmarks = ref.watch(bookmarksMasterProvider);
+    final _ = ref.watch(allPostsProvider);
 
     Future<void> refresh() async {
       ref.invalidate(bookmarksMasterProvider);
@@ -184,7 +185,13 @@ class BookmarkListScreen extends HookConsumerWidget {
             return ListView.builder(
               itemCount: posts.length,
               itemBuilder: (context, index) {
-                final post = posts[index];
+                final post = ref
+                    .read(allPostsProvider.notifier)
+                    .getPostById(posts[index]);
+                if (post == null) {
+                  return Container();
+                }
+                // final post = posts[index];
                 return ListTile(
                   title: Text(post.name),
                   subtitle: Text(post.comment),
