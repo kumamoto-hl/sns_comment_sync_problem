@@ -61,6 +61,10 @@ class PostFeedScreen extends HookConsumerWidget {
     final postIdsAsync = ref.watch(postsProvider);
     final _ = ref.watch(allPostsProvider);
 
+    Future<void> refresh() async {
+      ref.invalidate(postsProvider);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Post Feed'),
@@ -89,36 +93,39 @@ class PostFeedScreen extends HookConsumerWidget {
           )
         ],
       ),
-      body: postIdsAsync.when(
-        data: (postIds) {
-          return ListView.builder(
-            itemCount: postIds.length,
-            itemBuilder: (context, index) {
-              final post = ref
-                  .read(allPostsProvider.notifier)
-                  .getPostById(postIds[index]);
-              if (post == null) {
-                return Container();
-              }
-              // final post = posts[index];
-              return ListTile(
-                title: Text(post.name),
-                subtitle: Text(post.comment),
-                trailing: BookmarkButton(post: post),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PostDetailScreen(postId: post.id),
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+      body: RefreshIndicator(
+        onRefresh: refresh,
+        child: postIdsAsync.when(
+          data: (postIds) {
+            return ListView.builder(
+              itemCount: postIds.length,
+              itemBuilder: (context, index) {
+                final post = ref
+                    .read(allPostsProvider.notifier)
+                    .getPostById(postIds[index]);
+                if (post == null) {
+                  return Container();
+                }
+                // final post = posts[index];
+                return ListTile(
+                  title: Text(post.name),
+                  subtitle: Text(post.comment),
+                  trailing: BookmarkButton(post: post),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailScreen(postId: post.id),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error: $error')),
+        ),
       ),
     );
   }
