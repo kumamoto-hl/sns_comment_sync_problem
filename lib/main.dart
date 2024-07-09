@@ -75,6 +75,17 @@ class PostFeedScreen extends HookConsumerWidget {
               const PopupMenuItem(value: 2, child: Text('Login as User 2')),
             ],
           ),
+          IconButton(
+            icon: const Icon(Icons.bookmark),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BookmarkListScreen(),
+                ),
+              );
+            },
+          )
         ],
       ),
       body: posts.when(
@@ -139,6 +150,53 @@ class PostDetailScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
+      ),
+    );
+  }
+}
+
+class BookmarkListScreen extends HookConsumerWidget {
+  const BookmarkListScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bookmarks = ref.watch(bookmarksProvider);
+
+    Future<void> refresh() async {
+      ref.invalidate(bookmarksMasterProvider);
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Bookmarks'),
+      ),
+      body: RefreshIndicator(
+        onRefresh: refresh,
+        child: bookmarks.when(
+          data: (posts) {
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return ListTile(
+                  title: Text(post.name),
+                  subtitle: Text(post.comment),
+                  trailing: BookmarkButton(post: post),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailScreen(postId: post.id),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error: $error')),
+        ),
       ),
     );
   }

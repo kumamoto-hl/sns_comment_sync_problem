@@ -94,6 +94,32 @@ final postDetailProvider =
   return post.id;
 });
 
+final bookmarksProvider = FutureProvider.autoDispose<List<Post>>((ref) async {
+  final _ = ref.watch(allPostsProvider);
+  final postIds = await ref.watch(bookmarksMasterProvider.future);
+
+  return postIds
+      .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
+      .nonNulls
+      .toList();
+});
+
+final bookmarksMasterProvider =
+    FutureProvider.autoDispose<List<int>>((ref) async {
+  final dio = ref.read(dioProvider);
+  final loginId = ref.read(loginIdProvider);
+  final response = await dio.get('/bookmarks/$loginId');
+  final Map<String, dynamic> data = response.data as Map<String, dynamic>;
+
+  final List<dynamic> bookmarksData = data['bookmarks'] as List<dynamic>;
+
+  final bookmarks = bookmarksData
+      .map((json) => Post.fromJson(json as Map<String, dynamic>))
+      .toList();
+
+  return bookmarks.map((bookmark) => bookmark.id).toList();
+});
+
 Future<void> toggleBookmark(
     WidgetRef ref, int userId, int postId, bool isBookmarked) async {
   final dio = ref.read(dioProvider);

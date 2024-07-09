@@ -139,12 +139,29 @@ app.delete('/bookmarks', (req, res) => {
 // 特定ユーザーのブックマークリスト取得
 app.get('/bookmarks/:userId', (req, res) => {
     const userId = req.params.userId;
-    db.all(`SELECT posts.id, users.name, posts.comment FROM bookmarks JOIN posts ON bookmarks.postId = posts.id JOIN users ON posts.userId = users.id WHERE bookmarks.userId = ?`, [userId], (err, rows) => {
+    db.all(`
+        SELECT 
+            posts.id, 
+            users.name, 
+            posts.comment, 
+            CASE WHEN bookmarks.userId IS NOT NULL THEN 1 ELSE 0 END AS isBookmarked
+        FROM bookmarks 
+        JOIN posts ON bookmarks.postId = posts.id 
+        JOIN users ON posts.userId = users.id 
+        WHERE bookmarks.userId = ?
+    `, [userId], (err, rows) => {
         if (err) {
-            res.status(500).json({error: err.message});
+            res.status(500).json({ error: err.message });
             return;
         }
-        res.json({bookmarks: rows});
+
+        // isBookmarkedをbooleanに変換
+        const bookmarks = rows.map(row => ({
+            ...row,
+            isBookmarked: row.isBookmarked === 1
+        }));
+
+        res.json({ bookmarks });
     });
 });
 
