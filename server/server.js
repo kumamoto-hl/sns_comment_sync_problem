@@ -4,8 +4,7 @@ const bodyParser = require('body-parser');
 
 const app = express();
 const port = 3000;
-const db = new sqlite3.Database(':memory:');
-
+const db = new sqlite3.Database('./database.sqlite');
 // Middleware
 app.use(bodyParser.json());
 
