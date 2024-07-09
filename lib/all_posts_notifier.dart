@@ -48,14 +48,13 @@ class AllPostsNotifier extends StateNotifier<List<Post>> {
 }
 
 final hogeProvider = FutureProvider.autoDispose<List<Post>>((ref) async {
-  final _ = ref.watch(allPostsProvider);
   final postIds = await ref.watch(postsProvider.future);
 
   return postIds
       .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
       .nonNulls
       .toList();
-});
+},);
 
 final postsProvider = FutureProvider.autoDispose<List<int>>((ref) async {
 //  final allPosts = ref.watch(allPostsProvider.notifier);
