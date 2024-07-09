@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sns_comment_sync_problem/post.dart';
 
@@ -58,12 +59,27 @@ class PostFeedScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final postIdsAsync = ref.watch(postsProvider);
+    final pagedPostsAsync = ref.watch(pagedPostsProvider);
+    final scrollController = useScrollController();
     final _ = ref.watch(allPostsProvider);
 
     Future<void> refresh() async {
-      ref.invalidate(postsProvider);
+      ref.read(pagedPostsProvider.notifier).reset();
     }
+
+    void fetchNextPage() {
+      ref.read(pagedPostsProvider.notifier).fetchNextPage();
+    }
+
+    useEffect(() {
+      scrollController.addListener(() {
+        if (scrollController.position.atEdge &&
+            scrollController.position.pixels != 0) {
+          fetchNextPage();
+        }
+      });
+      return null;
+    }, [scrollController]);
 
     return Scaffold(
       appBar: AppBar(
@@ -73,7 +89,8 @@ class PostFeedScreen extends HookConsumerWidget {
             child: Text("Login as: ${ref.watch(loginIdProvider)}"),
             onSelected: (id) {
               ref.read(loginIdProvider.notifier).state = id;
-              ref.invalidate(postsProvider);
+              ref.read(pagedPostsProvider.notifier).reset();
+              ref.invalidate(allPostsProvider);
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: 1, child: Text('Login as User 1')),
@@ -95,9 +112,10 @@ class PostFeedScreen extends HookConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: refresh,
-        child: postIdsAsync.when(
+        child: pagedPostsAsync.when(
           data: (postIds) {
             return ListView.builder(
+              controller: scrollController,
               itemCount: postIds.length,
               itemBuilder: (context, index) {
                 final post = ref
@@ -106,7 +124,6 @@ class PostFeedScreen extends HookConsumerWidget {
                 if (post == null) {
                   return Container();
                 }
-                // final post = posts[index];
                 return ListTile(
                   title: Text(post.name),
                   subtitle: Text(post.comment),

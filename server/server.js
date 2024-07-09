@@ -46,6 +46,10 @@ db.serialize(() => {
 // 記事のフィード取得
 app.get('/posts', (req, res) => {
     const userId = req.header('user-id'); // ヘッダーからログインIDを取得
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20;
+    const offset = (page - 1) * limit;
+
     db.all(`
         SELECT 
             posts.id, 
@@ -55,7 +59,8 @@ app.get('/posts', (req, res) => {
         FROM posts 
         JOIN users ON posts.userId = users.id
         LEFT JOIN bookmarks ON posts.id = bookmarks.postId AND bookmarks.userId = ?
-    `, [userId], (err, rows) => {
+        LIMIT ? OFFSET ?
+    `, [userId, limit, offset], (err, rows) => {
         if (err) {
             res.status(500).json({error: err.message});
             return;

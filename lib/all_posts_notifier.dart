@@ -51,32 +51,82 @@ class AllPostsNotifier extends StateNotifier<List<Post>> {
   }
 }
 
-final hogeProvider = FutureProvider.autoDispose<List<Post>>(
-  (ref) async {
-    final postIds = await ref.watch(postsProvider.future);
+// final hogeProvider = FutureProvider.autoDispose<List<Post>>(
+//   (ref) async {
+//     final postIds = await ref.watch(postsProvider.future);
 
-    return postIds
-        .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
-        .nonNulls
+//     return postIds
+//         .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
+//         .nonNulls
+//         .toList();
+//   },
+// );
+
+class PagedPostsNotifier extends AsyncNotifier<List<int>> {
+  int currentPage = 1; // 現在のページを保持する
+  List<int> postIds = [];
+  @override
+  Future<List<int>> build() async {
+    return await _fetchPosts(currentPage); // 初期ページは1
+  }
+
+  Future<List<int>> _fetchPosts(int page) async {
+    final dio = ref.read(dioProvider);
+    final response = await dio.get('/posts', queryParameters: {'page': page});
+    final Map<String, dynamic> data = response.data as Map<String, dynamic>;
+
+    final List<dynamic> postsData = data['posts'] as List<dynamic>;
+
+    final posts = postsData
+        .map((json) => Post.fromJson(json as Map<String, dynamic>))
         .toList();
-  },
-);
 
-final postsProvider = FutureProvider.autoDispose<List<int>>((ref) async {
-//  final allPosts = ref.watch(allPostsProvider.notifier);
-  final dio = ref.read(dioProvider);
-  final response = await dio.get('/posts');
-  final Map<String, dynamic> data = response.data as Map<String, dynamic>;
+    ref.read(allPostsProvider.notifier).setPosts(posts);
+    final newPosts = posts.map((post) => post.id).toList();
 
-  final List<dynamic> postsData = data['posts'] as List<dynamic>;
+    return newPosts;
+  }
 
-  final posts = postsData
-      .map((json) => Post.fromJson(json as Map<String, dynamic>))
-      .toList();
-  ref.read(allPostsProvider.notifier).setPosts(posts);
-  return posts.map((post) => post.id).toList();
-//  return posts.map((post) => allPosts.getPostById(post.id)).nonNulls.toList();
-});
+  Future<void> fetchNextPage() async {
+    state = state.whenData((existingPosts) => [...existingPosts]);
+
+    state = await AsyncValue.guard(() async {
+      currentPage++;
+      final newPosts = await _fetchPosts(currentPage);
+      return [...state.value ?? [], ...newPosts];
+    });
+  }
+
+  Future<void> reset() async {
+    currentPage = 1;
+    postIds.clear();
+    state = await AsyncValue.guard(() async {
+      return await _fetchPosts(currentPage);
+    });
+  }
+}
+
+// final pagedPostsProvider = AsyncNotifierProvider<PagedPostsNotifier, List<int>>(
+//     PagedPostsNotifier.new);
+
+final pagedPostsProvider = AsyncNotifierProvider<PagedPostsNotifier, List<int>>(
+    PagedPostsNotifier.new);
+
+// final postsProvider = FutureProvider.autoDispose<List<int>>((ref) async {
+// //  final allPosts = ref.watch(allPostsProvider.notifier);
+//   final dio = ref.read(dioProvider);
+//   final response = await dio.get('/posts');
+//   final Map<String, dynamic> data = response.data as Map<String, dynamic>;
+
+//   final List<dynamic> postsData = data['posts'] as List<dynamic>;
+
+//   final posts = postsData
+//       .map((json) => Post.fromJson(json as Map<String, dynamic>))
+//       .toList();
+//   ref.read(allPostsProvider.notifier).setPosts(posts);
+//   return posts.map((post) => post.id).toList();
+// //  return posts.map((post) => allPosts.getPostById(post.id)).nonNulls.toList();
+// });
 
 final hoge2Provider =
     FutureProvider.autoDispose.family<Post?, int>((ref, idd) async {
@@ -99,15 +149,15 @@ final postDetailProvider =
   return post.id;
 });
 
-final bookmarksProvider = FutureProvider.autoDispose<List<Post>>((ref) async {
-  final _ = ref.watch(allPostsProvider);
-  final postIds = await ref.watch(bookmarksMasterProvider.future);
+// final bookmarksProvider = FutureProvider.autoDispose<List<Post>>((ref) async {
+//   final _ = ref.watch(allPostsProvider);
+//   final postIds = await ref.watch(bookmarksMasterProvider.future);
 
-  return postIds
-      .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
-      .nonNulls
-      .toList();
-});
+//   return postIds
+//       .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
+//       .nonNulls
+//       .toList();
+// });
 
 final bookmarksMasterProvider =
     FutureProvider.autoDispose<List<int>>((ref) async {
@@ -121,6 +171,7 @@ final bookmarksMasterProvider =
   final bookmarks = bookmarksData
       .map((json) => Post.fromJson(json as Map<String, dynamic>))
       .toList();
+  ref.read(allPostsProvider.notifier).setPosts(bookmarks);
 
   return bookmarks.map((bookmark) => bookmark.id).toList();
 });
