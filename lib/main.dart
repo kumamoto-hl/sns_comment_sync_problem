@@ -58,7 +58,8 @@ class PostFeedScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final posts = ref.watch(hogeProvider);
+    final postIdsAsync = ref.watch(postsProvider);
+    final _ = ref.watch(allPostsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -77,12 +78,18 @@ class PostFeedScreen extends HookConsumerWidget {
           ),
         ],
       ),
-      body: posts.when(
-        data: (posts) {
+      body: postIdsAsync.when(
+        data: (postIds) {
           return ListView.builder(
-            itemCount: posts.length,
+            itemCount: postIds.length,
             itemBuilder: (context, index) {
-              final post = posts[index];
+              final post = ref
+                  .read(allPostsProvider.notifier)
+                  .getPostById(postIds[index]);
+              if (post == null) {
+                return Container();
+              }
+              // final post = posts[index];
               return ListTile(
                 title: Text(post.name),
                 subtitle: Text(post.comment),
