@@ -95,16 +95,8 @@ class PagedPostsNotifier extends AsyncNotifier<List<int>> {
   }
 }
 
-final pagedPostsProvider = AsyncNotifierProvider<PagedPostsNotifier, List<int>>(
+final postIdsProvider = AsyncNotifierProvider<PagedPostsNotifier, List<int>>(
     PagedPostsNotifier.new);
-
-final postDetailProvider =
-    FutureProvider.autoDispose.family<Post?, int>((ref, idd) async {
-  final _ = ref.watch(allPostsProvider);
-  final id = await ref.watch(postDetailIdProvider(idd).future);
-
-  return ref.read(allPostsProvider.notifier).getPostById(id);
-});
 
 final postDetailIdProvider =
     FutureProvider.autoDispose.family<int, int>((ref, postId) async {

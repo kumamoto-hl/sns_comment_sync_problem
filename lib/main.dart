@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -59,16 +60,26 @@ class PostFeedScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pagedPostsAsync = ref.watch(pagedPostsProvider);
+    final postIdsAsync = ref.watch(postIdsProvider);
     final scrollController = useScrollController();
-    final _ = ref.watch(allPostsProvider);
+    final posts = ref.watch(
+      allPostsProvider.select(
+        (posts) {
+          final postIds = postIdsAsync.maybeWhen(
+            data: (ids) => ids,
+            orElse: () => [],
+          );
+          return posts.where((post) => postIds.contains(post.id)).toList();
+        },
+      ),
+    );
 
     Future<void> refresh() async {
-      ref.read(pagedPostsProvider.notifier).reset();
+      ref.read(postIdsProvider.notifier).reset();
     }
 
     void fetchNextPage() {
-      ref.read(pagedPostsProvider.notifier).fetchNextPage();
+      ref.read(postIdsProvider.notifier).fetchNextPage();
     }
 
     useEffect(() {
@@ -89,7 +100,7 @@ class PostFeedScreen extends HookConsumerWidget {
             child: Text("Login as: ${ref.watch(loginIdProvider)}"),
             onSelected: (id) {
               ref.read(loginIdProvider.notifier).state = id;
-              ref.read(pagedPostsProvider.notifier).reset();
+              ref.read(postIdsProvider.notifier).reset();
               ref.invalidate(allPostsProvider);
             },
             itemBuilder: (context) => [
@@ -112,18 +123,13 @@ class PostFeedScreen extends HookConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: refresh,
-        child: pagedPostsAsync.when(
+        child: postIdsAsync.when(
           data: (postIds) {
             return ListView.builder(
               controller: scrollController,
               itemCount: postIds.length,
               itemBuilder: (context, index) {
-                final post = ref
-                    .read(allPostsProvider.notifier)
-                    .getPostById(postIds[index]);
-                if (post == null) {
-                  return Container();
-                }
+                final post = posts[index];
                 return ListTile(
                   title: Text(post.name),
                   subtitle: Text(post.comment),
@@ -155,7 +161,12 @@ class PostDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final postDetail = ref.watch(postDetailProvider(postId));
+    final postDetailAsync = ref.watch(postDetailIdProvider(postId));
+    final postDetail = ref.watch(
+      allPostsProvider.select(
+        (posts) => posts.firstWhereOrNull((post) => post.id == postId),
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -167,10 +178,6 @@ class PostDetailScreen extends ConsumerWidget {
               final dio = ref.read(dioProvider);
               try {
                 await dio.delete('/posts/$postId');
-                ref.read(allPostsProvider.notifier).removePost(postId);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -178,27 +185,32 @@ class PostDetailScreen extends ConsumerWidget {
                   );
                 }
               }
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+              ref.read(allPostsProvider.notifier).removePost(postId);
             },
           ),
         ],
       ),
-      body: postDetail.when(
-        data: (post) {
-          return post == null
-              ? const Center(child: Text('Post not found'))
-              : Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(post.name, style: const TextStyle(fontSize: 24)),
-                      const SizedBox(height: 16),
-                      Text(post.comment, style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 16),
-                      BookmarkButton(post: post),
-                    ],
-                  ),
-                );
+      body: postDetailAsync.when(
+        data: (id) {
+          if (postDetail == null) {
+            return const Center(child: Text('Post not found'));
+          }
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(postDetail.name, style: const TextStyle(fontSize: 24)),
+                const SizedBox(height: 16),
+                Text(postDetail.comment, style: const TextStyle(fontSize: 16)),
+                const SizedBox(height: 16),
+                BookmarkButton(post: postDetail),
+              ],
+            ),
+          );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
