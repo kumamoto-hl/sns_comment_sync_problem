@@ -155,7 +155,7 @@ class PostDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final postDetail = ref.watch(hoge2Provider(postId));
+    final postDetail = ref.watch(postDetailProvider(postId));
 
     return Scaffold(
       appBar: AppBar(
@@ -168,11 +168,15 @@ class PostDetailScreen extends ConsumerWidget {
               try {
                 await dio.delete('/posts/$postId');
                 ref.read(allPostsProvider.notifier).removePost(postId);
-                Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
               }
             },
           ),
@@ -208,11 +212,11 @@ class BookmarkListScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookmarks = ref.watch(bookmarksMasterProvider);
+    final bookmarks = ref.watch(bookmarksIdsProvider);
     final _ = ref.watch(allPostsProvider);
 
     Future<void> refresh() async {
-      ref.invalidate(bookmarksMasterProvider);
+      ref.invalidate(bookmarksIdsProvider);
     }
 
     return Scaffold(
@@ -232,7 +236,6 @@ class BookmarkListScreen extends HookConsumerWidget {
                 if (post == null) {
                   return Container();
                 }
-                // final post = posts[index];
                 return ListTile(
                   title: Text(post.name),
                   subtitle: Text(post.comment),

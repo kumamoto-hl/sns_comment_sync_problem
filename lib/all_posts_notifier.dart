@@ -3,13 +3,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'post.dart';
 
-final loginIdProvider = StateProvider<int>((ref) => 1); // 初期値を1に設定
+final loginIdProvider = StateProvider<int>((ref) => 1);
 
 final dioProvider = Provider<Dio>((ref) {
   final loginId = ref.watch(loginIdProvider);
   return Dio(BaseOptions(
     baseUrl: 'http://localhost:3000',
-    headers: {'user-id': loginId.toString()}, // ログインIDをヘッダーに追加
+    headers: {'user-id': loginId.toString()},
   ));
 });
 
@@ -51,23 +51,12 @@ class AllPostsNotifier extends StateNotifier<List<Post>> {
   }
 }
 
-// final hogeProvider = FutureProvider.autoDispose<List<Post>>(
-//   (ref) async {
-//     final postIds = await ref.watch(postsProvider.future);
-
-//     return postIds
-//         .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
-//         .nonNulls
-//         .toList();
-//   },
-// );
-
 class PagedPostsNotifier extends AsyncNotifier<List<int>> {
-  int currentPage = 1; // 現在のページを保持する
+  int currentPage = 1;
   List<int> postIds = [];
   @override
   Future<List<int>> build() async {
-    return await _fetchPosts(currentPage); // 初期ページは1
+    return await _fetchPosts(currentPage);
   }
 
   Future<List<int>> _fetchPosts(int page) async {
@@ -106,37 +95,18 @@ class PagedPostsNotifier extends AsyncNotifier<List<int>> {
   }
 }
 
-// final pagedPostsProvider = AsyncNotifierProvider<PagedPostsNotifier, List<int>>(
-//     PagedPostsNotifier.new);
-
 final pagedPostsProvider = AsyncNotifierProvider<PagedPostsNotifier, List<int>>(
     PagedPostsNotifier.new);
 
-// final postsProvider = FutureProvider.autoDispose<List<int>>((ref) async {
-// //  final allPosts = ref.watch(allPostsProvider.notifier);
-//   final dio = ref.read(dioProvider);
-//   final response = await dio.get('/posts');
-//   final Map<String, dynamic> data = response.data as Map<String, dynamic>;
-
-//   final List<dynamic> postsData = data['posts'] as List<dynamic>;
-
-//   final posts = postsData
-//       .map((json) => Post.fromJson(json as Map<String, dynamic>))
-//       .toList();
-//   ref.read(allPostsProvider.notifier).setPosts(posts);
-//   return posts.map((post) => post.id).toList();
-// //  return posts.map((post) => allPosts.getPostById(post.id)).nonNulls.toList();
-// });
-
-final hoge2Provider =
+final postDetailProvider =
     FutureProvider.autoDispose.family<Post?, int>((ref, idd) async {
   final _ = ref.watch(allPostsProvider);
-  final id = await ref.watch(postDetailProvider(idd).future);
+  final id = await ref.watch(postDetailIdProvider(idd).future);
 
   return ref.read(allPostsProvider.notifier).getPostById(id);
 });
 
-final postDetailProvider =
+final postDetailIdProvider =
     FutureProvider.autoDispose.family<int, int>((ref, postId) async {
   final dio = ref.read(dioProvider);
   final response = await dio.get('/posts/$postId');
@@ -149,18 +119,7 @@ final postDetailProvider =
   return post.id;
 });
 
-// final bookmarksProvider = FutureProvider.autoDispose<List<Post>>((ref) async {
-//   final _ = ref.watch(allPostsProvider);
-//   final postIds = await ref.watch(bookmarksMasterProvider.future);
-
-//   return postIds
-//       .map((id) => ref.read(allPostsProvider.notifier).getPostById(id))
-//       .nonNulls
-//       .toList();
-// });
-
-final bookmarksMasterProvider =
-    FutureProvider.autoDispose<List<int>>((ref) async {
+final bookmarksIdsProvider = FutureProvider.autoDispose<List<int>>((ref) async {
   final dio = ref.read(dioProvider);
   final loginId = ref.read(loginIdProvider);
   final response = await dio.get('/bookmarks/$loginId');
