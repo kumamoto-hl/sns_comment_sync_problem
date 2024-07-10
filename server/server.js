@@ -1,10 +1,20 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
+const fs = require('fs');
 
 const app = express();
 const port = 3000;
-const db = new sqlite3.Database('./database.sqlite');
+const dbFile = './database.sqlite';
+
+// データベースファイルが存在する場合は削除
+if (fs.existsSync(dbFile)) {
+    fs.unlinkSync(dbFile);
+}
+
+// 新規データベースを作成
+const db = new sqlite3.Database(dbFile);
+
 // Middleware
 app.use(bodyParser.json());
 
@@ -44,9 +54,9 @@ db.serialize(() => {
 
 // 記事のフィード取得
 app.get('/posts', (req, res) => {
-    const userId = req.header('user-id'); // ヘッダーからログインIDを取得
+    const userId = req.header('user-id');
     const page = parseInt(req.query.page) || 1;
-    const limit = 20;
+    const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
 
     db.all(`
@@ -72,6 +82,35 @@ app.get('/posts', (req, res) => {
         }));
 
         res.json({posts});
+    });
+});
+
+// 特定ユーザーのブックマークリスト取得
+app.get('/bookmarks/:userId', (req, res) => {
+    const userId = req.params.userId;
+    db.all(`
+        SELECT 
+            posts.id, 
+            users.name, 
+            posts.comment, 
+            CASE WHEN bookmarks.userId IS NOT NULL THEN 1 ELSE 0 END AS isBookmarked
+        FROM bookmarks 
+        JOIN posts ON bookmarks.postId = posts.id 
+        JOIN users ON posts.userId = users.id 
+        WHERE bookmarks.userId = ?
+    `, [userId], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        // isBookmarkedをbooleanに変換
+        const bookmarks = rows.map(row => ({
+            ...row,
+            isBookmarked: row.isBookmarked === 1
+        }));
+
+        res.json({ bookmarks });
     });
 });
 
@@ -138,47 +177,6 @@ app.delete('/bookmarks', (req, res) => {
             return;
         }
         res.json({message: 'Bookmark removed'});
-    });
-});
-
-// 特定ユーザーのブックマークリスト取得
-app.get('/bookmarks/:userId', (req, res) => {
-    const userId = req.params.userId;
-    db.all(`
-        SELECT 
-            posts.id, 
-            users.name, 
-            posts.comment, 
-            CASE WHEN bookmarks.userId IS NOT NULL THEN 1 ELSE 0 END AS isBookmarked
-        FROM bookmarks 
-        JOIN posts ON bookmarks.postId = posts.id 
-        JOIN users ON posts.userId = users.id 
-        WHERE bookmarks.userId = ?
-    `, [userId], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        // isBookmarkedをbooleanに変換
-        const bookmarks = rows.map(row => ({
-            ...row,
-            isBookmarked: row.isBookmarked === 1
-        }));
-
-        res.json({ bookmarks });
-    });
-});
-
-// 特定ユーザーの投稿リスト取得
-app.get('/posts/user/:userId', (req, res) => {
-    const userId = req.params.userId;
-    db.all(`SELECT id, comment FROM posts WHERE userId = ?`, [userId], (err, rows) => {
-        if (err) {
-            res.status(500).json({error: err.message});
-            return;
-        }
-        res.json({posts: rows});
     });
 });
 

@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Simple SNS',
+      title: 'Simple SNS App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -38,14 +38,12 @@ class BookmarkButton extends ConsumerWidget {
         final userId = ref.read(loginIdProvider);
         final newBookmarkStatus = !post.isBookmarked;
 
-        // 楽観的な更新
         ref
             .read(allPostsProvider.notifier)
             .updatePost(post.copyWith(isBookmarked: newBookmarkStatus));
         try {
           await toggleBookmark(ref, userId, post.id, post.isBookmarked);
         } catch (e) {
-          // エラーが発生した場合、元の状態に戻す
           ref
               .read(allPostsProvider.notifier)
               .updatePost(post.copyWith(isBookmarked: !newBookmarkStatus));
@@ -97,7 +95,7 @@ class PostFeedScreen extends HookConsumerWidget {
         title: const Text('Post Feed'),
         actions: [
           PopupMenuButton<int>(
-            child: Text("Login as: ${ref.watch(loginIdProvider)}"),
+            child: const Icon(Icons.bug_report),
             onSelected: (id) {
               ref.read(loginIdProvider.notifier).state = id;
               ref.read(postIdsProvider.notifier).reset();
@@ -129,6 +127,10 @@ class PostFeedScreen extends HookConsumerWidget {
               controller: scrollController,
               itemCount: postIds.length,
               itemBuilder: (context, index) {
+                if (index >= posts.length) {
+                  return Container();
+                }
+
                 final post = posts[index];
                 return ListTile(
                   title: Text(post.name),
