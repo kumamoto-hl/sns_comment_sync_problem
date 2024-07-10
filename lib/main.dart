@@ -40,13 +40,12 @@ class BookmarkButton extends ConsumerWidget {
 
         ref
             .read(allPostsProvider.notifier)
-            .updatePost(post.copyWith(isBookmarked: newBookmarkStatus));
+            .updatePostWith([post.copyWith(isBookmarked: newBookmarkStatus)]);
         try {
           await toggleBookmark(ref, userId, post.id, post.isBookmarked);
         } catch (e) {
-          ref
-              .read(allPostsProvider.notifier)
-              .updatePost(post.copyWith(isBookmarked: !newBookmarkStatus));
+          ref.read(allPostsProvider.notifier).updatePostWith(
+              [post.copyWith(isBookmarked: !newBookmarkStatus)]);
         }
       },
     );
@@ -223,8 +222,15 @@ class BookmarkListScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookmarks = ref.watch(bookmarksIdsProvider);
-    final _ = ref.watch(allPostsProvider);
+    final bookmarksAsync = ref.watch(bookmarksIdsProvider);
+    final posts = ref.watch(
+      allPostsProvider.select(
+        (posts) {
+          final postIds = bookmarksAsync.value ?? [];
+          return posts.where((post) => postIds.contains(post.id)).toList();
+        },
+      ),
+    );
 
     Future<void> refresh() async {
       ref.invalidate(bookmarksIdsProvider);
@@ -236,17 +242,12 @@ class BookmarkListScreen extends HookConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: refresh,
-        child: bookmarks.when(
-          data: (posts) {
+        child: bookmarksAsync.when(
+          data: (bookmarks) {
             return ListView.builder(
               itemCount: posts.length,
               itemBuilder: (context, index) {
-                final post = ref
-                    .read(allPostsProvider.notifier)
-                    .getPostById(posts[index]);
-                if (post == null) {
-                  return Container();
-                }
+                final post = posts[index];
                 return ListTile(
                   title: Text(post.name),
                   subtitle: Text(post.comment),

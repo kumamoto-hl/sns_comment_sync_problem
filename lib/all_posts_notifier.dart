@@ -21,7 +21,7 @@ final allPostsProvider =
 class AllPostsNotifier extends StateNotifier<List<Post>> {
   AllPostsNotifier() : super([]);
 
-  void setPosts(List<Post> posts) {
+  void updatePostWith(List<Post> posts) {
     final Map<int, Post> postMap = {for (var post in state) post.id: post};
 
     for (var post in posts) {
@@ -31,29 +31,13 @@ class AllPostsNotifier extends StateNotifier<List<Post>> {
     state = postMap.values.toList();
   }
 
-  void updatePost(Post post) {
-    state = [
-      for (final p in state)
-        if (p.id == post.id) post else p
-    ];
-  }
-
   void removePost(int postId) {
     state = state.where((post) => post.id != postId).toList();
-  }
-
-  Post? getPostById(int id) {
-    try {
-      return state.firstWhere((post) => post.id == id);
-    } catch (e) {
-      return null;
-    }
   }
 }
 
 class PagedPostsNotifier extends AsyncNotifier<List<int>> {
   int currentPage = 1;
-  List<int> postIds = [];
   @override
   Future<List<int>> build() async {
     return await _fetchPosts(currentPage);
@@ -70,7 +54,7 @@ class PagedPostsNotifier extends AsyncNotifier<List<int>> {
         .map((json) => Post.fromJson(json as Map<String, dynamic>))
         .toList();
 
-    ref.read(allPostsProvider.notifier).setPosts(posts);
+    ref.read(allPostsProvider.notifier).updatePostWith(posts);
     final newPosts = posts.map((post) => post.id).toList();
 
     return newPosts;
@@ -88,7 +72,6 @@ class PagedPostsNotifier extends AsyncNotifier<List<int>> {
 
   Future<void> reset() async {
     currentPage = 1;
-    postIds.clear();
     state = await AsyncValue.guard(() async {
       return await _fetchPosts(currentPage);
     });
@@ -106,7 +89,7 @@ final postDetailIdProvider =
   final data = response.data;
   final post = Post.fromJson(data['post']);
 
-  ref.read(allPostsProvider.notifier).setPosts([post]);
+  ref.read(allPostsProvider.notifier).updatePostWith([post]);
 
   return post.id;
 });
@@ -122,7 +105,7 @@ final bookmarksIdsProvider = FutureProvider.autoDispose<List<int>>((ref) async {
   final bookmarks = bookmarksData
       .map((json) => Post.fromJson(json as Map<String, dynamic>))
       .toList();
-  ref.read(allPostsProvider.notifier).setPosts(bookmarks);
+  ref.read(allPostsProvider.notifier).updatePostWith(bookmarks);
 
   return bookmarks.map((bookmark) => bookmark.id).toList();
 });
