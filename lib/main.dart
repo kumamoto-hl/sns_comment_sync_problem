@@ -63,10 +63,7 @@ class PostFeedScreen extends HookConsumerWidget {
     final posts = ref.watch(
       allPostsProvider.select(
         (posts) {
-          final postIds = postIdsAsync.maybeWhen(
-            data: (ids) => ids,
-            orElse: () => [],
-          );
+          final postIds = postIdsAsync.value ?? [];
           return posts.where((post) => postIds.contains(post.id)).toList();
         },
       ),
