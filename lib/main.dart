@@ -53,6 +53,14 @@ class BookmarkButton extends ConsumerWidget {
   }
 }
 
+final fetchPostProvider =
+    FutureProvider.autoDispose.family<Post?, int>((ref, id) {
+  final post = ref.watch(allPostsProvider
+      .select((e) => e.firstWhereOrNull((item) => item.id == id)));
+  print(post);
+  return post;
+});
+
 class PostFeedScreen extends HookConsumerWidget {
   const PostFeedScreen({super.key});
 
@@ -60,17 +68,19 @@ class PostFeedScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final postIdsAsync = ref.watch(postIdsProvider);
     final scrollController = useScrollController();
-    final posts = ref.watch(
-      allPostsProvider.select(
-        (posts) {
-          final postIds = postIdsAsync.maybeWhen(
-            data: (ids) => ids,
-            orElse: () => [],
-          );
-          return posts.where((post) => postIds.contains(post.id)).toList();
-        },
-      ),
-    );
+    // final _ = ref.watch(allPostsProvider);
+    // final posts = ref.watch(
+    //   allPostsProvider.select(
+    //     (posts) {
+    //       final postIds = postIdsAsync.value ?? [];
+    //       // final postIds = postIdsAsync.maybeWhen(
+    //       //   data: (ids) => ids,
+    //       //   orElse: () => [],
+    //       // );
+    //       return posts.where((post) => postIds.contains(post.id)).toList();
+    //     },
+    //   ),
+    // );
 
     Future<void> refresh() async {
       ref.read(postIdsProvider.notifier).reset();
@@ -127,20 +137,29 @@ class PostFeedScreen extends HookConsumerWidget {
               controller: scrollController,
               itemCount: postIds.length,
               itemBuilder: (context, index) {
-                if (index >= posts.length) {
+                // if (index >= posts.length) {
+                //   return Container();
+                // }
+
+                // final post = posts[index];
+
+                final id = postIds[index];
+                final post = ref.watch(fetchPostProvider(id)).value;
+                if (post == null) {
                   return Container();
                 }
-
-                final post = posts[index];
                 return ListTile(
-                  title: Text(post.name),
-                  subtitle: Text(post.comment),
-                  trailing: BookmarkButton(post: post),
+                  title: Text(post.name ?? ''),
+                  subtitle: Text(post.comment ?? ''),
+                  trailing: post != null
+                      ? BookmarkButton(post: post)
+                      : const SizedBox.shrink(),
                   onTap: () {
+                    final id = post.id;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => PostDetailScreen(postId: post.id),
+                        builder: (context) => PostDetailScreen(postId: id),
                       ),
                     );
                   },

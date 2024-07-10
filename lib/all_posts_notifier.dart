@@ -51,12 +51,28 @@ class AllPostsNotifier extends StateNotifier<List<Post>> {
   }
 }
 
-class PagedPostsNotifier extends AsyncNotifier<List<int>> {
+class PagedPostsNotifier extends AutoDisposeAsyncNotifier<List<int>> {
   int currentPage = 1;
   List<int> postIds = [];
   @override
   Future<List<int>> build() async {
-    return await _fetchPosts(currentPage);
+    final notifier = ref.watch(allPostsProvider.notifier);
+    final dio = ref.watch(dioProvider);
+    final response =
+        await dio.get('/posts', queryParameters: {'page': currentPage});
+    final Map<String, dynamic> data = response.data as Map<String, dynamic>;
+
+    final List<dynamic> postsData = data['posts'] as List<dynamic>;
+
+    final posts = postsData
+        .map((json) => Post.fromJson(json as Map<String, dynamic>))
+        .toList();
+
+    notifier.setPosts(posts);
+    final newPosts = posts.map((post) => post.id).toList();
+
+    return newPosts;
+    // return await _fetchPosts(currentPage);
   }
 
   Future<List<int>> _fetchPosts(int page) async {
@@ -95,8 +111,9 @@ class PagedPostsNotifier extends AsyncNotifier<List<int>> {
   }
 }
 
-final postIdsProvider = AsyncNotifierProvider<PagedPostsNotifier, List<int>>(
-    PagedPostsNotifier.new);
+final postIdsProvider =
+    AsyncNotifierProvider.autoDispose<PagedPostsNotifier, List<int>>(
+        PagedPostsNotifier.new);
 
 final postDetailIdProvider =
     FutureProvider.autoDispose.family<int, int>((ref, postId) async {
